@@ -39,7 +39,7 @@ const LABELS = {
     monitorWaiting: "Waiting for input signal",
     monitorProcessingQuote: "\"Cinema is a matter of what's in the frame and what's out.\"",
     monitorProcessingSub: "Processing with Gemini...",
-    poweredBy: "Powered by Gemini 2.5 Flash Image"
+    poweredBy: "Powered by Gemini 2.5 Flash Image",
   },
   es: {
     title: "Motor de Realidad Cinemática",
@@ -72,7 +72,7 @@ const LABELS = {
     monitorWaiting: "Esperando señal de entrada",
     monitorProcessingQuote: "\"El cine es cuestión de lo que está dentro del cuadro y lo que está fuera.\"",
     monitorProcessingSub: "Procesando con Gemini...",
-    poweredBy: "Impulsado por Gemini 2.5 Flash Image"
+    poweredBy: "Impulsado por Gemini 2.5 Flash Image",
   }
 };
 
@@ -125,6 +125,19 @@ function App() {
     }
   };
 
+  const getActiveInstruction = () => {
+    let instructionToUse = finalPrompt;
+    if (!instructionToUse.trim()) {
+       const parts = [];
+       if (promptDetails.character) parts.push(`Character: ${promptDetails.character}`);
+       if (promptDetails.clothing) parts.push(`Clothing: ${promptDetails.clothing}`);
+       if (promptDetails.action) parts.push(`Action: ${promptDetails.action}`);
+       if (promptDetails.setting) parts.push(`Setting: ${promptDetails.setting}`);
+       instructionToUse = parts.join('. ');
+    }
+    return instructionToUse;
+  };
+
   const handleGenerate = async () => {
     if (!sourceImage) return;
     
@@ -138,16 +151,7 @@ function App() {
     setError(null);
     setGeneratedImage(null); // Clear previous result to show loading
 
-    // Construct prompt if finalPrompt is empty, otherwise use finalPrompt
-    let instructionToUse = finalPrompt;
-    if (!instructionToUse.trim()) {
-       const parts = [];
-       if (promptDetails.character) parts.push(`Character: ${promptDetails.character}`);
-       if (promptDetails.clothing) parts.push(`Clothing: ${promptDetails.clothing}`);
-       if (promptDetails.action) parts.push(`Action: ${promptDetails.action}`);
-       if (promptDetails.setting) parts.push(`Setting: ${promptDetails.setting}`);
-       instructionToUse = parts.join('. ');
-    }
+    const instructionToUse = getActiveInstruction();
 
     try {
       const result = await generateCinematicImage(
@@ -451,63 +455,66 @@ function App() {
           </div>
 
           {/* RIGHT COLUMN: Output */}
-          <div className="lg:col-span-7 flex flex-col">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-              <h3 className="font-medium text-lg uppercase tracking-wide">{text.monitorTitle}</h3>
-            </div>
-
-            <div className="flex-1 bg-black rounded-xl border border-gray-800 relative overflow-hidden flex items-center justify-center min-h-[400px] shadow-2xl">
-              {/* Grid Overlay for cinematic feel */}
-              <div className="absolute inset-0 pointer-events-none opacity-20 z-10" 
-                style={{backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '25% 25%'}}>
-              </div>
-              
-              {/* Content */}
-              {generatedImage ? (
-                <div className="relative w-full h-full flex flex-col animate-fade-in">
-                  <img src={generatedImage} alt="Generated Cinematic" className="w-full h-auto max-h-full object-contain shadow-2xl" />
-                  
-                  {/* Overlay Controls */}
-                  <div className="absolute bottom-4 right-4 flex space-x-2 z-20">
-                     <button 
-                       onClick={() => downloadImage('png')}
-                       className="bg-arri-gold text-black px-4 py-2 rounded font-bold text-xs hover:bg-white transition-colors shadow-lg flex items-center space-x-1"
-                     >
-                       <span>PNG</span>
-                     </button>
-                     <button 
-                       onClick={() => downloadImage('jpg')}
-                       className="bg-gray-800 text-white border border-gray-600 px-4 py-2 rounded font-bold text-xs hover:bg-gray-700 transition-colors shadow-lg flex items-center space-x-1"
-                     >
-                       <span>JPG</span>
-                     </button>
-                  </div>
-
-                  <div className="absolute top-4 left-4 bg-black/50 backdrop-blur px-3 py-1 text-xs text-arri-gold border border-arri-gold/30 rounded uppercase tracking-widest">
-                    {language === 'en' ? FILTERS.find(f => f.id === selectedFilter)?.name : FILTERS.find(f => f.id === selectedFilter)?.name_es} // ARRI RAW // x2 Upscale
-                  </div>
+          <div className="lg:col-span-7 flex flex-col space-y-8">
+            {/* 1. Image Monitor */}
+            <div className="flex flex-col">
+                <div className="flex items-center space-x-2 mb-4">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                <h3 className="font-medium text-lg uppercase tracking-wide">{text.monitorTitle}</h3>
                 </div>
-              ) : (
-                <div className="text-center text-gray-600 p-10">
-                  {isProcessing ? (
-                    <div className="flex flex-col items-center space-y-4">
-                      <div className="w-16 h-16 border-4 border-arri-gray border-t-arri-gold rounded-full animate-spin"></div>
-                      <p className="font-serif italic text-xl text-gray-400">{text.monitorProcessingQuote}</p>
-                      <p className="text-xs uppercase tracking-widest text-arri-gold">{text.monitorProcessingSub}</p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={0.5} stroke="currentColor" className="w-24 h-24 mb-4 opacity-20">
-                         <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 19.914 6 20.25v.75C6 21.596 5.496 22 4.875 22H3.375v-2.5ZM19.5 19.5h-1.5c-.621 0-1.125.404-1.125 1.125v.75c0 .621.504 1.125 1.125 1.125h1.5v-2.5ZM4.875 2H19.125C19.746 2 20.25 2.504 20.25 3.125v1.5c0 .621-.504 1.125-1.125 1.125h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a1.125 1.125 0 0 1 1.125-1.125h1.5V2Z" />
-                         <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 12c0 2.071-1.679 3.75-3.75 3.75a3.75 3.75 0 0 1-3.75-3.75c0-2.071 1.679-3.75 3.75-3.75 2.071 0 3.75 1.679 3.75 3.75Z" />
-                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 15.75a3.75 3.75 0 0 1-3.75-3.75V6h7.5v6a3.75 3.75 0 0 1-3.75 3.75Z" />
-                       </svg>
-                       <p className="uppercase tracking-widest text-sm">{text.monitorWaiting}</p>
-                    </div>
-                  )}
+
+                <div className="flex-1 bg-black rounded-xl border border-gray-800 relative overflow-hidden flex items-center justify-center min-h-[400px] shadow-2xl">
+                {/* Grid Overlay for cinematic feel */}
+                <div className="absolute inset-0 pointer-events-none opacity-20 z-10" 
+                    style={{backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '25% 25%'}}>
                 </div>
-              )}
+                
+                {/* Content */}
+                {generatedImage ? (
+                    <div className="relative w-full h-full flex flex-col animate-fade-in">
+                    <img src={generatedImage} alt="Generated Cinematic" className="w-full h-auto max-h-full object-contain shadow-2xl" />
+                    
+                    {/* Overlay Controls */}
+                    <div className="absolute bottom-4 right-4 flex space-x-2 z-20">
+                        <button 
+                        onClick={() => downloadImage('png')}
+                        className="bg-arri-gold text-black px-4 py-2 rounded font-bold text-xs hover:bg-white transition-colors shadow-lg flex items-center space-x-1"
+                        >
+                        <span>PNG</span>
+                        </button>
+                        <button 
+                        onClick={() => downloadImage('jpg')}
+                        className="bg-gray-800 text-white border border-gray-600 px-4 py-2 rounded font-bold text-xs hover:bg-gray-700 transition-colors shadow-lg flex items-center space-x-1"
+                        >
+                        <span>JPG</span>
+                        </button>
+                    </div>
+
+                    <div className="absolute top-4 left-4 bg-black/50 backdrop-blur px-3 py-1 text-xs text-arri-gold border border-arri-gold/30 rounded uppercase tracking-widest">
+                        {language === 'en' ? FILTERS.find(f => f.id === selectedFilter)?.name : FILTERS.find(f => f.id === selectedFilter)?.name_es} // ARRI RAW // x2 Upscale
+                    </div>
+                    </div>
+                ) : (
+                    <div className="text-center text-gray-600 p-10">
+                    {isProcessing ? (
+                        <div className="flex flex-col items-center space-y-4">
+                        <div className="w-16 h-16 border-4 border-arri-gray border-t-arri-gold rounded-full animate-spin"></div>
+                        <p className="font-serif italic text-xl text-gray-400">{text.monitorProcessingQuote}</p>
+                        <p className="text-xs uppercase tracking-widest text-arri-gold">{text.monitorProcessingSub}</p>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={0.5} stroke="currentColor" className="w-24 h-24 mb-4 opacity-20">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 19.914 6 20.25v.75C6 21.596 5.496 22 4.875 22H3.375v-2.5ZM19.5 19.5h-1.5c-.621 0-1.125.404-1.125 1.125v.75c0 .621.504 1.125 1.125 1.125h1.5v-2.5ZM4.875 2H19.125C19.746 2 20.25 2.504 20.25 3.125v1.5c0 .621-.504 1.125-1.125 1.125h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a1.125 1.125 0 0 1 1.125-1.125h1.5V2Z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 12c0 2.071-1.679 3.75-3.75 3.75a3.75 3.75 0 0 1-3.75-3.75c0-2.071 1.679-3.75 3.75-3.75 2.071 0 3.75 1.679 3.75 3.75Z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15.75a3.75 3.75 0 0 1-3.75-3.75V6h7.5v6a3.75 3.75 0 0 1-3.75 3.75Z" />
+                        </svg>
+                        <p className="uppercase tracking-widest text-sm">{text.monitorWaiting}</p>
+                        </div>
+                    )}
+                    </div>
+                )}
+                </div>
             </div>
           </div>
 
